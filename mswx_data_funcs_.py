@@ -52,26 +52,32 @@ def get_gloh2o_timeseries(src_path, var_stations_file,glo_var,min_lon,max_lon,ma
         
         for file in files:   
             file_path = os.path.join(src_path, file)   
-            with xr.open_dataset(file_path, engine='netcdf4') as var_data:       
-                           
+            with xr.open_dataset(file_path, engine='netcdf4') as var_data:               
                     #clip file to reduce size for computation
                     subset_data=var_data.sel(lon=slice(min_lon,max_lon), lat=slice(max_lat,min_lat)) 
-                    # Select the nearest data point for the station
-                    nearest_data = subset_data.sel(lon=stat_lon, lat=stat_lat, method='nearest')
+                    lat=subset_data.variables['lat'][:]
+                    lon=subset_data.variables['lon'][:]
+                    
+                    #squared difference of lat and lon
+                    sq_diff_lat=(lat-stat_lat)**2
+                    sq_diff_lon=(lon-stat_lon)**2
 
-                    # Accessing the data
-                    var_climate_data = nearest_data[glo_var]  # Access the climate variable
-                    date_range = pd.to_datetime(nearest_data.time)  # Access time from the file
+                    #locate the index nearest point (minimum value) of station from the data file
+                    min_indexlat=np.argmin(sq_diff_lat.data)
+                    min_indexlon=np.argmin(sq_diff_lon.data)
+            
+                    #accessing the data
+                    var_climate_data=subset_data.variables[glo_var] #access the climate variable from the file using the variable name
+                    date_range=pd.to_datetime(subset_data.time) #access time from the file
 
                     for time_index in np.arange(0, len(date_range)):
                         row_label = date_range[time_index]
                         col_label = glo_var
 
-                        # Update the DataFrame with the value of the variable
-                        station_timeseries.loc[row_label, col_label] = var_climate_data[time_index]
-                        station_timeseries.index.name = 'date'
-                        print(f'extracted data for {var_data}')
-
+                        # Update the cell in the DataFrame with the value of the variable
+                        station_timeseries.loc[row_label, col_label] = var_climate_data[time_index, min_indexlat, min_indexlon]
+                    station_timeseries.index.name='date'
+            
         #save to data dir with station name and variable        
         station_timeseries.to_csv(os.path.join(src_path,station+'_mswx'+'__'+glo_var+'.csv')) 
 
@@ -81,6 +87,6 @@ if __name__ == "__main__":
     src_path = 'path/to/data'
     var_stations_file = 'path/to/stations.csv'
     glo_var = 'precipitation'  # Example variable
-    min_lon, max_lon, max_lat, min_lat = -10, 40, 10, -10  # Bounding box coordinates
+    min_lon, max_lon, max_lat, min_lat = 'x1', 'x2', 'y2', 'y1'
 
     get_gloh2o_timeseries(src_path, var_stations_file, glo_var, min_lon, max_lon, max_lat, min_lat)
