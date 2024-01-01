@@ -59,9 +59,6 @@ def get_gloh2o_timeseries(src_path, var_stations_file,glo_var,min_lon,max_lon,ma
             subset_data=var_data.sel(lon=slice(min_lon,max_lon), lat=slice(max_lat,min_lat)) 
             lat=subset_data.variables['lat'][:]
             lon=subset_data.variables['lon'][:]
-
-            lat=subset_data.variables['lat'][:]
-            lon=subset_data.variables['lon'][:]
             
             #squared difference of lat and lon
             sq_diff_lat=(lat-stat_lat)**2
@@ -87,5 +84,8 @@ def get_gloh2o_timeseries(src_path, var_stations_file,glo_var,min_lon,max_lon,ma
         station_timeseries.to_csv(os.path.join(src_path,station+'_mswx'+'_'+glo_var+'.csv')) 
 
         print('Recorded data for', station)
+
+if __name__ == "__main__":
+    print('Extracting data...')
 
         
